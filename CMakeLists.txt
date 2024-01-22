@@ -15,4 +15,4 @@ get_filename_component(LUA_LIBRARY_DIR ${LUA_LIBRARY} PATH)
 set(LUA_MODULE_DIR "${LUA_LIBRARY_DIR}/lua/5.1")
 
 add_subdirectory(src)
-add_subdirectory(3rdparty/l8w8jwt)
+add_subdirectory(3rdparty/l8w8jwt EXCLUDE_FROM_ALL)
