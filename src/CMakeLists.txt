@@ -1,0 +1,5 @@
+aux_source_directory(. SOURCES)
+add_library(cjwt MODULE ${SOURCES})
+target_link_libraries(cjwt PRIVATE ${LUA_LIBRARIES} l8w8jwt)
+set_target_properties(cjwt PROPERTIES PREFIX "" SUFFIX ".so")
+install(TARGETS cjwt DESTINATION ${LUA_MODULE_DIR})
