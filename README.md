@@ -53,6 +53,14 @@ print("claims:")
 for k, v in pairs(claims) do
   print("\t"..k..": "..tostring(v))
 end
+
+-- No-validation Decode
+local rc, _, claims = cjwt.decode(token)
+print("retcode: "..rc)
+print("claims:")
+for k, v in pairs(claims) do
+  print("\t"..k..": "..tostring(v))
+end
 ```
 
 ### APIs for lua
@@ -81,7 +89,7 @@ A successful call returns 0 and a string representing the encoded JSON-Web-Token
 
 #### cjwt.decode
 
-**syntax:** `<number>retcode, <number>validation_result, <table>claims = cjwt.decode(<string>token, <number>alg, <string>verification_key[, <table>validation])`
+**syntax:** `<number>retcode, <number>validation_result, <table>claims = cjwt.decode(<string>token[, <number>alg, <string>verification_key, <table>validation])`
 
 Decode and validate a JSON-Web-Token.
 

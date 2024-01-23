@@ -156,117 +156,125 @@ int cjwt_encode(lua_State* L) {
 int cjwt_decode(lua_State* L) {
   auto nargs = lua_gettop(L);
   luaL_checktype(L, 1, LUA_TSTRING);
-  luaL_checktype(L, 2, LUA_TNUMBER);
-  luaL_checktype(L, 3, LUA_TSTRING);
-  if (nargs > 3) {
-    luaL_checktype(L, 4, LUA_TTABLE);
+  if (nargs > 1) {
+    luaL_checktype(L, 2, LUA_TNUMBER);
+    luaL_checktype(L, 3, LUA_TSTRING);
+    if (nargs > 3) {
+      luaL_checktype(L, 4, LUA_TTABLE);
+    }
   }
   l8w8jwt_decoding_params params;
   l8w8jwt_decoding_params_init(&params);
   params.jwt = const_cast<char*>(lua_tolstring(L, 1, &params.jwt_length));
-  params.alg = lua_tointeger(L, 2);
-  params.verification_key = const_cast<uint8_t*>(reinterpret_cast<const uint8_t*>(lua_tolstring(L, 3, &params.verification_key_length)));
-  if (nargs > 3) {
-    lua_getfield(L, 4, "iss");
-    if (!lua_isnil(L, -1)) {
-      params.validate_iss = const_cast<char*>(lua_tolstring(L, -1, &params.validate_iss_length));
-      if (!params.validate_iss) {
-        luaL_error(L, "Invalid JWT validation: iss must be a string");
+  if (nargs > 1) {
+    params.alg = lua_tointeger(L, 2);
+    params.verification_key = const_cast<uint8_t*>(reinterpret_cast<const uint8_t*>(lua_tolstring(L, 3, &params.verification_key_length)));
+    if (nargs > 3) {
+      lua_getfield(L, 4, "iss");
+      if (!lua_isnil(L, -1)) {
+        params.validate_iss = const_cast<char*>(lua_tolstring(L, -1, &params.validate_iss_length));
+        if (!params.validate_iss) {
+          luaL_error(L, "Invalid JWT validation: iss must be a string");
+        }
       }
+      lua_pop(L, 1);
+      lua_getfield(L, 4, "sub");
+      if (!lua_isnil(L, -1)) {
+        params.validate_sub = const_cast<char*>(lua_tolstring(L, -1, &params.validate_sub_length));
+        if (!params.validate_sub) {
+          luaL_error(L, "Invalid JWT validation: sub must be a string");
+        }
+      }
+      lua_pop(L, 1);
+      lua_getfield(L, 4, "aud");
+      if (!lua_isnil(L, -1)) {
+        params.validate_aud = const_cast<char*>(lua_tolstring(L, -1, &params.validate_aud_length));
+        if (!params.validate_aud) {
+          luaL_error(L, "Invalid JWT validation: aud must be a string");
+        }
+      }
+      lua_pop(L, 1);
+      lua_getfield(L, 4, "jti");
+      if (!lua_isnil(L, -1)) {
+        params.validate_jti = const_cast<char*>(lua_tolstring(L, -1, &params.validate_jti_length));
+        if (!params.validate_jti) {
+          luaL_error(L, "Invalid JWT validation: jti must be a string");
+        }
+      }
+      lua_pop(L, 1);
+      lua_getfield(L, 4, "exp");
+      if (!lua_isnil(L, -1)) {
+        if (!lua_isboolean(L, -1)) {
+          luaL_error(L, "Invalid JWT validation: exp must be a boolean");
+        }
+        params.validate_exp = lua_toboolean(L, -1);
+      }
+      lua_pop(L, 1);
+      lua_getfield(L, 4, "nbf");
+      if (!lua_isnil(L, -1)) {
+        if (!lua_isboolean(L, -1)) {
+          luaL_error(L, "Invalid JWT validation: nbf must be a boolean");
+        }
+        params.validate_nbf = lua_toboolean(L, -1);
+      }
+      lua_pop(L, 1);
+      lua_getfield(L, 4, "iat");
+      if (!lua_isnil(L, -1)) {
+        if (!lua_isboolean(L, -1)) {
+          luaL_error(L, "Invalid JWT validation: iat must be a boolean");
+        }
+        params.validate_iat = lua_toboolean(L, -1);
+      }
+      lua_pop(L, 1);
+      lua_getfield(L, 4, "exp_tolerance");
+      if (!lua_isnil(L, -1)) {
+        if (!lua_isnumber(L, -1)) {
+          luaL_error(L, "Invalid JWT validation: exp_tolerance must be a uint8");
+        }
+        auto value = lua_tointeger(L, -1);
+        if (value < 0 || value > 0xFF) {
+          luaL_error(L, "Invalid JWT validation: exp_tolerance must be a uint8");
+        }
+        params.exp_tolerance_seconds = static_cast<uint8_t>(value);
+      }
+      lua_pop(L, 1);
+      lua_getfield(L, 4, "nbf_tolerance");
+      if (!lua_isnil(L, -1)) {
+        if (!lua_isnumber(L, -1)) {
+          luaL_error(L, "Invalid JWT validation: nbf_tolerance must be a uint8");
+        }
+        auto value = lua_tointeger(L, -1);
+        if (value < 0 || value > 0xFF) {
+          luaL_error(L, "Invalid JWT validation: nbf_tolerance must be a uint8");
+        }
+        params.nbf_tolerance_seconds = static_cast<uint8_t>(value);
+      }
+      lua_pop(L, 1);
+      lua_getfield(L, 4, "iat_tolerance");
+      if (!lua_isnil(L, -1)) {
+        if (!lua_isnumber(L, -1)) {
+          luaL_error(L, "Invalid JWT validation: iat_tolerance must be a uint8");
+        }
+        auto value = lua_tointeger(L, -1);
+        if (value < 0 || value > 0xFF) {
+          luaL_error(L, "Invalid JWT validation: iat_tolerance must be a uint8");
+        }
+        params.iat_tolerance_seconds = static_cast<uint8_t>(value);
+      }
+      lua_pop(L, 1);
+      lua_getfield(L, 4, "typ");
+      if (!lua_isnil(L, -1)) {
+        params.validate_typ = const_cast<char*>(lua_tolstring(L, -1, &params.validate_typ_length));
+        if (!params.validate_typ) {
+          luaL_error(L, "Invalid JWT validation: typ must be a string");
+        }
+      }
+      lua_pop(L, 1);
     }
-    lua_pop(L, 1);
-    lua_getfield(L, 4, "sub");
-    if (!lua_isnil(L, -1)) {
-      params.validate_sub = const_cast<char*>(lua_tolstring(L, -1, &params.validate_sub_length));
-      if (!params.validate_sub) {
-        luaL_error(L, "Invalid JWT validation: sub must be a string");
-      }
-    }
-    lua_pop(L, 1);
-    lua_getfield(L, 4, "aud");
-    if (!lua_isnil(L, -1)) {
-      params.validate_aud = const_cast<char*>(lua_tolstring(L, -1, &params.validate_aud_length));
-      if (!params.validate_aud) {
-        luaL_error(L, "Invalid JWT validation: aud must be a string");
-      }
-    }
-    lua_pop(L, 1);
-    lua_getfield(L, 4, "jti");
-    if (!lua_isnil(L, -1)) {
-      params.validate_jti = const_cast<char*>(lua_tolstring(L, -1, &params.validate_jti_length));
-      if (!params.validate_jti) {
-        luaL_error(L, "Invalid JWT validation: jti must be a string");
-      }
-    }
-    lua_pop(L, 1);
-    lua_getfield(L, 4, "exp");
-    if (!lua_isnil(L, -1)) {
-      if (!lua_isboolean(L, -1)) {
-        luaL_error(L, "Invalid JWT validation: exp must be a boolean");
-      }
-      params.validate_exp = lua_toboolean(L, -1);
-    }
-    lua_pop(L, 1);
-    lua_getfield(L, 4, "nbf");
-    if (!lua_isnil(L, -1)) {
-      if (!lua_isboolean(L, -1)) {
-        luaL_error(L, "Invalid JWT validation: nbf must be a boolean");
-      }
-      params.validate_nbf = lua_toboolean(L, -1);
-    }
-    lua_pop(L, 1);
-    lua_getfield(L, 4, "iat");
-    if (!lua_isnil(L, -1)) {
-      if (!lua_isboolean(L, -1)) {
-        luaL_error(L, "Invalid JWT validation: iat must be a boolean");
-      }
-      params.validate_iat = lua_toboolean(L, -1);
-    }
-    lua_pop(L, 1);
-    lua_getfield(L, 4, "exp_tolerance");
-    if (!lua_isnil(L, -1)) {
-      if (!lua_isnumber(L, -1)) {
-        luaL_error(L, "Invalid JWT validation: exp_tolerance must be a uint8");
-      }
-      auto value = lua_tointeger(L, -1);
-      if (value < 0 || value > 0xFF) {
-        luaL_error(L, "Invalid JWT validation: exp_tolerance must be a uint8");
-      }
-      params.exp_tolerance_seconds = static_cast<uint8_t>(value);
-    }
-    lua_pop(L, 1);
-    lua_getfield(L, 4, "nbf_tolerance");
-    if (!lua_isnil(L, -1)) {
-      if (!lua_isnumber(L, -1)) {
-        luaL_error(L, "Invalid JWT validation: nbf_tolerance must be a uint8");
-      }
-      auto value = lua_tointeger(L, -1);
-      if (value < 0 || value > 0xFF) {
-        luaL_error(L, "Invalid JWT validation: nbf_tolerance must be a uint8");
-      }
-      params.nbf_tolerance_seconds = static_cast<uint8_t>(value);
-    }
-    lua_pop(L, 1);
-    lua_getfield(L, 4, "iat_tolerance");
-    if (!lua_isnil(L, -1)) {
-      if (!lua_isnumber(L, -1)) {
-        luaL_error(L, "Invalid JWT validation: iat_tolerance must be a uint8");
-      }
-      auto value = lua_tointeger(L, -1);
-      if (value < 0 || value > 0xFF) {
-        luaL_error(L, "Invalid JWT validation: iat_tolerance must be a uint8");
-      }
-      params.iat_tolerance_seconds = static_cast<uint8_t>(value);
-    }
-    lua_pop(L, 1);
-    lua_getfield(L, 4, "typ");
-    if (!lua_isnil(L, -1)) {
-      params.validate_typ = const_cast<char*>(lua_tolstring(L, -1, &params.validate_typ_length));
-      if (!params.validate_typ) {
-        luaL_error(L, "Invalid JWT validation: typ must be a string");
-      }
-    }
-    lua_pop(L, 1);
+  } else {
+    params.alg = -1;
+    params.verification_key = const_cast<uint8_t*>(reinterpret_cast<const uint8_t*>("lua-cjwt"));
+    params.verification_key_length = 8;
   }
   l8w8jwt_validation_result vc;
   l8w8jwt_claim* claims = nullptr;
