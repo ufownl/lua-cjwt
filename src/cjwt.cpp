@@ -32,7 +32,7 @@ l8w8jwt_claim parse_additional_claim(lua_State* L, const char* key, size_t key_l
       claim.type = L8W8JWT_CLAIM_TYPE_STRING;
       break;
     default:
-      luaL_error(L, "Unsupported value type");
+      luaL_error(L, "Unsupported claim type");
   }
   return claim;
 }
