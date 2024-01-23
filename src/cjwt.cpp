@@ -1,7 +1,9 @@
 #include "cjwt.hpp"
 #include <l8w8jwt/encode.h>
+#include <l8w8jwt/decode.h>
 #include <vector>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 
 namespace {
@@ -139,11 +141,149 @@ int cjwt_encode(lua_State* L) {
   return 2;
 }
 
+int cjwt_decode(lua_State* L) {
+  auto nargs = lua_gettop(L);
+  luaL_checktype(L, 1, LUA_TSTRING);
+  luaL_checktype(L, 2, LUA_TNUMBER);
+  luaL_checktype(L, 3, LUA_TSTRING);
+  if (nargs > 3) {
+    luaL_checktype(L, 4, LUA_TTABLE);
+  }
+  l8w8jwt_decoding_params params;
+  l8w8jwt_decoding_params_init(&params);
+  params.jwt = const_cast<char*>(lua_tolstring(L, 1, &params.jwt_length));
+  params.alg = lua_tointeger(L, 2);
+  params.verification_key = const_cast<uint8_t*>(reinterpret_cast<const uint8_t*>(lua_tolstring(L, 3, &params.verification_key_length)));
+  if (nargs > 3) {
+    lua_getfield(L, 4, "iss");
+    if (!lua_isnil(L, -1)) {
+      params.validate_iss = const_cast<char*>(lua_tolstring(L, -1, &params.validate_iss_length));
+    }
+    lua_pop(L, 1);
+    lua_getfield(L, 4, "sub");
+    if (!lua_isnil(L, -1)) {
+      params.validate_sub = const_cast<char*>(lua_tolstring(L, -1, &params.validate_sub_length));
+    }
+    lua_pop(L, 1);
+    lua_getfield(L, 4, "aud");
+    if (!lua_isnil(L, -1)) {
+      params.validate_aud = const_cast<char*>(lua_tolstring(L, -1, &params.validate_aud_length));
+    }
+    lua_pop(L, 1);
+    lua_getfield(L, 4, "jti");
+    if (!lua_isnil(L, -1)) {
+      params.validate_jti = const_cast<char*>(lua_tolstring(L, -1, &params.validate_jti_length));
+    }
+    lua_pop(L, 1);
+    lua_getfield(L, 4, "exp");
+    if (!lua_isnil(L, -1)) {
+      if (!lua_isboolean(L, -1)) {
+        luaL_error(L, "Invalid JWT validation");
+      }
+      params.validate_exp = lua_toboolean(L, -1);
+    }
+    lua_pop(L, 1);
+    lua_getfield(L, 4, "nbf");
+    if (!lua_isnil(L, -1)) {
+      if (!lua_isboolean(L, -1)) {
+        luaL_error(L, "Invalid JWT validation");
+      }
+      params.validate_nbf = lua_toboolean(L, -1);
+    }
+    lua_pop(L, 1);
+    lua_getfield(L, 4, "iat");
+    if (!lua_isnil(L, -1)) {
+      if (!lua_isboolean(L, -1)) {
+        luaL_error(L, "Invalid JWT validation");
+      }
+      params.validate_iat = lua_toboolean(L, -1);
+    }
+    lua_pop(L, 1);
+    lua_getfield(L, 4, "exp_tolerance");
+    if (!lua_isnil(L, -1)) {
+      if (!lua_isnumber(L, -1)) {
+        luaL_error(L, "Invalid JWT validation");
+      }
+      auto value = lua_tointeger(L, -1);
+      if (value < 0 || value > 0xFF) {
+        luaL_error(L, "Invalid JWT validation");
+      }
+      params.exp_tolerance_seconds = static_cast<uint8_t>(value);
+    }
+    lua_pop(L, 1);
+    lua_getfield(L, 4, "nbf_tolerance");
+    if (!lua_isnil(L, -1)) {
+      if (!lua_isnumber(L, -1)) {
+        luaL_error(L, "Invalid JWT validation");
+      }
+      auto value = lua_tointeger(L, -1);
+      if (value < 0 || value > 0xFF) {
+        luaL_error(L, "Invalid JWT validation");
+      }
+      params.nbf_tolerance_seconds = static_cast<uint8_t>(value);
+    }
+    lua_pop(L, 1);
+    lua_getfield(L, 4, "iat_tolerance");
+    if (!lua_isnil(L, -1)) {
+      if (!lua_isnumber(L, -1)) {
+        luaL_error(L, "Invalid JWT validation");
+      }
+      auto value = lua_tointeger(L, -1);
+      if (value < 0 || value > 0xFF) {
+        luaL_error(L, "Invalid JWT validation");
+      }
+      params.iat_tolerance_seconds = static_cast<uint8_t>(value);
+    }
+    lua_pop(L, 1);
+    lua_getfield(L, 4, "typ");
+    if (!lua_isnil(L, -1)) {
+      params.validate_typ = const_cast<char*>(lua_tolstring(L, -1, &params.validate_typ_length));
+    }
+    lua_pop(L, 1);
+  }
+  l8w8jwt_validation_result vc;
+  l8w8jwt_claim* claims = nullptr;
+  size_t claims_count;
+  auto rc = l8w8jwt_decode(&params, &vc, &claims, &claims_count);
+  lua_pushinteger(L, rc);
+  if (rc == L8W8JWT_SUCCESS) {
+    lua_pushinteger(L, vc);
+    lua_newtable(L);
+    for (size_t i = 0; i < claims_count; ++i) {
+      switch (claims[i].type) {
+        case L8W8JWT_CLAIM_TYPE_STRING:
+          lua_pushlstring(L, claims[i].value, claims[i].value_length);
+          break;
+        case L8W8JWT_CLAIM_TYPE_INTEGER:
+          lua_pushinteger(L, std::strtoll(claims[i].value, nullptr, 0));
+          break;
+        case L8W8JWT_CLAIM_TYPE_NUMBER:
+          lua_pushnumber(L, std::strtod(claims[i].value, nullptr));
+          break;
+        case L8W8JWT_CLAIM_TYPE_BOOLEAN:
+          lua_pushboolean(L, claims[i].value_length < 5);
+          break;
+        default:
+          lua_pushfstring(L, "Unsupported claim type: %d", claims[i].type);
+      }
+      lua_setfield(L, -2, claims[i].key);
+    }
+  } else {
+    lua_pushnil(L);
+    lua_pushnil(L);
+  }
+  if (claims) {
+    l8w8jwt_free_claims(claims, claims_count);
+  }
+  return 3;
+}
+
 }
 
 int luaopen_cjwt(lua_State* L) {
   constexpr const luaL_Reg entries[] = {
     {"encode", cjwt_encode},
+    {"decode", cjwt_decode},
     {nullptr, nullptr}
   };
   lua_newtable(L);
