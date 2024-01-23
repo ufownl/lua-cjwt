@@ -134,7 +134,7 @@ int cjwt_encode(lua_State* L) {
   }
   params.secret_key = const_cast<uint8_t*>(reinterpret_cast<const uint8_t*>(lua_tolstring(L, 3, &params.secret_key_length)));
   if (nargs > 3) {
-    params.secret_key_pw = const_cast<uint8_t*>(reinterpret_cast<const uint8_t*>(lua_tolstring(L, 3, &params.secret_key_pw_length)));
+    params.secret_key_pw = const_cast<uint8_t*>(reinterpret_cast<const uint8_t*>(lua_tolstring(L, 4, &params.secret_key_pw_length)));
   }
   char* jwt = nullptr;
   size_t jwt_length;
