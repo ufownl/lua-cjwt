@@ -33,6 +33,14 @@ l8w8jwt_claim parse_additional_claim(lua_State* L, const char* key, size_t key_l
       claim.value = const_cast<char*>(lua_tolstring(L, -1, &claim.value_length));
       claim.type = L8W8JWT_CLAIM_TYPE_STRING;
       break;
+    case LUA_TLIGHTUSERDATA:
+      if (lua_touserdata(L, -1)) {
+        luaL_error(L, "Unsupported claim type");
+      }
+      claim.value = const_cast<char*>("null");
+      claim.value_length = 4;
+      claim.type = L8W8JWT_CLAIM_TYPE_NULL;
+      break;
     default:
       luaL_error(L, "Unsupported claim type");
   }
@@ -298,6 +306,9 @@ int cjwt_decode(lua_State* L) {
         case L8W8JWT_CLAIM_TYPE_BOOLEAN:
           lua_pushboolean(L, claims[i].value_length < 5);
           break;
+        case L8W8JWT_CLAIM_TYPE_NULL:
+          lua_pushnil(L);
+          break;
         default:
           lua_pushfstring(L, "Unsupported claim type: %d", claims[i].type);
       }
@@ -313,12 +324,18 @@ int cjwt_decode(lua_State* L) {
   return 3;
 }
 
+int cjwt_null(lua_State* L) {
+  lua_pushlightuserdata(L, nullptr);
+  return 1;
+}
+
 }
 
 int luaopen_cjwt(lua_State* L) {
   constexpr const luaL_Reg entries[] = {
     {"encode", cjwt_encode},
     {"decode", cjwt_decode},
+    {"null", cjwt_null},
     {nullptr, nullptr}
   };
   lua_newtable(L);

@@ -36,7 +36,8 @@ local rc, token = cjwt.encode({
   iat = os.time(),
   foo = true,
   bar = false,
-  pi = 3.14159
+  pi = 3.14159,
+  test = cjwt.null()
 }, "foobar")
 print("retcode: "..rc)
 print("token: "..token)
@@ -113,12 +114,18 @@ Available validations:
 }
 ```
 
+#### cjwt.null
+
+**syntax:** `<lightuserdata>null = cjwt.null()`
+
+Return a `NULL` light userdata usually used to represent nil values in Lua tables etc and is similar to the [lua-cjson](https://kyne.com.au/~mark/software/lua-cjson.php) library's cjson.null constant.
+
 ### Supported Claim Types
 
 - [x] String
 - [x] Integer
 - [x] Number
 - [x] Boolean
-- [ ] Null
+- [x] Null
 - [ ] Array
 - [ ] Object
