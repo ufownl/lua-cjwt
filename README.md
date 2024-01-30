@@ -118,7 +118,7 @@ Available validations:
 
 **syntax:** `<lightuserdata>null = cjwt.null()`
 
-Return a `NULL` light userdata usually used to represent nil values in Lua tables etc and is similar to the [lua-cjson](https://kyne.com.au/~mark/software/lua-cjson.php) library's cjson.null constant.
+Return a `NULL` light userdata usually used to represent `nil` values in Lua tables etc and is similar to the [lua-cjson](https://kyne.com.au/~mark/software/lua-cjson.php) library's cjson.null constant.
 
 ### Supported Claim Types
 
