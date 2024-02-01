@@ -9,10 +9,5 @@ if(APPLE AND NOT DEFINED CMAKE_MACOSX_RPATH)
   set(CMAKE_MACOSX_RPATH TRUE)
 endif()
 
-find_package(LuaJIT REQUIRED)
-include_directories(${LUA_INCLUDE_DIR})
-get_filename_component(LUA_LIBRARY_DIR ${LUA_LIBRARY} PATH)
-set(LUA_MODULE_DIR "${LUA_LIBRARY_DIR}/lua/5.1")
-
 add_subdirectory(src)
 add_subdirectory(3rdparty/l8w8jwt EXCLUDE_FROM_ALL)

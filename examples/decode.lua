@@ -1,5 +1,5 @@
 local cjwt = require("cjwt")
-local token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3MDU5OTAxNjYsInN1YiI6IjEyMzQ1Njc4OTAiLCJuYW1lIjoiSm9obiBEb2UiLCJmb28iOnRydWUsImJhciI6ZmFsc2UsInBpIjozLjE0MTU5MjY1MzUsInRlc3QiOm51bGx9.ap5iad4-UsU33yG0yEEb1EoOKvmLta2B62dBo2E8wH0"
+local token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3MDU5OTAxNjYsInN1YiI6IjEyMzQ1Njc4OTAiLCJuYW1lIjoiSm9obiBEb2UiLCJmb28iOnRydWUsImJhciI6ZmFsc2UsInBpIjozLjE0MTU5MjY1MzUsInRlc3QiOm51bGwsImFyciI6WzEsMy4xNCwiZm9vYmFyIix0cnVlLGZhbHNlLG51bGwseyJuZXN0ZWRfZm9vIjoibmVzdGVkIGhlbGxvIiwibmVzdGVkX2JhciI6Im5lc3RlZCB3b3JsZCIsIm5lc3RlZF90cnVlIjp0cnVlLCJuZXN0ZWRfZmFsc2UiOmZhbHNlLCJuZXN0ZWRfbnVsbCI6bnVsbCwibmVzdGVkX2ludCI6NSwibmVzdGVkX251bSI6Ni4yOH0sWyJhYWEiLDIsNi4yOCxudWxsLGZhbHNlLHRydWVdXSwib2JqIjp7ImZvbyI6ImhlbGxvIiwiYmFyIjoid29ybGQiLCJ0cnVlIjp0cnVlLCJmYWxzZSI6ZmFsc2UsImludCI6NjY2LCJudW0iOjAuMTQsIm51bGwiOm51bGwsIm5lc3RlZF9vYmoiOnsibmVzdGVkX2ZvbyI6Im5lc3RlZCBoZWxsbyIsIm5lc3RlZF9iYXIiOiJuZXN0ZWQgd29ybGQiLCJuZXN0ZWRfdHJ1ZSI6dHJ1ZSwibmVzdGVkX2ZhbHNlIjpmYWxzZSwibmVzdGVkX251bGwiOm51bGwsIm5lc3RlZF9pbnQiOjUsIm5lc3RlZF9udW0iOjYuMjh9LCJuZXN0ZWRfYXJyIjpbImFhYSIsMiw2LjI4LG51bGwsZmFsc2UsdHJ1ZV19fQ.nPZFLH0rpDI4BUhyESDPOcOF9irves1S9xheLAPPf3g"
 local rc, vc, claims = cjwt.decode(token, cjwt.algs.HS256, "foobar", {
   sub = "1234567890",
   iat = true,
@@ -8,6 +8,4 @@ local rc, vc, claims = cjwt.decode(token, cjwt.algs.HS256, "foobar", {
 print("retcode: "..rc)
 print("valcode: "..vc)
 print("claims:")
-for k, v in pairs(claims) do
-  print("\t"..k..": "..tostring(v))
-end
+require("utils").dump_table(claims, "\t")

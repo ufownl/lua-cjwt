@@ -1,7 +1,13 @@
 #include "cjwt.hpp"
 #include <l8w8jwt/encode.h>
 #include <l8w8jwt/decode.h>
+#define JSMN_STATIC
+#include <jsmn.h>
+#define CHECKNUM_STATIC
+#include <checknum.h>
 #include <vector>
+#include <string>
+#include <algorithm>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -161,6 +167,160 @@ int cjwt_encode(lua_State* L) {
   return 2;
 }
 
+using jsmntok_v = std::vector<jsmntok_t>;
+jsmntok_v::const_iterator obj2table(lua_State* L, const char* json, jsmntok_v::const_iterator l, jsmntok_v::const_iterator r);
+jsmntok_v::const_iterator arr2table(lua_State* L, const char* json, jsmntok_v::const_iterator l, jsmntok_v::const_iterator r);
+
+void json2table(lua_State* L, const char* json, size_t json_length) {
+  jsmn_parser p;
+  jsmn_init(&p);
+  auto n = jsmn_parse(&p, json, json_length, nullptr, 0);
+  if (n < 0) {
+    luaL_error(L, "Invalid object/array claim: JSON parsing error");
+  }
+  if (n == 0) {
+    lua_newtable(L);
+    return;
+  }
+  jsmntok_v tokens(n);
+  jsmn_init(&p);
+  if (jsmn_parse(&p, json, json_length, tokens.data(), tokens.size()) < 0) {
+    luaL_error(L, "Invalid object/array claim: JSON parsing error");
+  }
+  switch (tokens.front().type) {
+    case JSMN_OBJECT:
+      obj2table(L, json, tokens.begin() + 1, tokens.end());
+      break;
+    case JSMN_ARRAY:
+      arr2table(L, json, tokens.begin() + 1, tokens.end());
+      break;
+    default:
+      luaL_error(L, "Invalid object/array claim: unknown token type %d", tokens.front().type);
+  }
+}
+
+std::string unescape_json_str(const char* in, size_t n) {
+  std::string out;
+  out.reserve(n);
+  for (size_t i = 0; i < n; ++i) {
+    auto c = in[i];
+    if (c == '\\' && i + 1 < n) {
+      switch (in[i + 1]) {
+        case '"':
+          c = '"';
+          ++i;
+          break;
+        case '\\':
+          c = '\\';
+          ++i;
+          break;
+        case '/':
+          c = '/';
+          ++i;
+          break;
+        case 'b':
+          c = '\b';
+          ++i;
+          break;
+        case 'f':
+          c = '\f';
+          ++i;
+          break;
+        case 'n':
+          c = '\n';
+          ++i;
+          break;
+        case 'r':
+          c = '\r';
+          ++i;
+          break;
+        case 't':
+          c = '\t';
+          ++i;
+          break;
+      }
+    }
+    out.push_back(c);
+  }
+  return out;
+}
+
+void parse_primitive(lua_State* L, const char* in, size_t n) {
+  switch (checknum(const_cast<char*>(in), n)) {
+    case 1:
+      lua_pushinteger(L, std::strtoll(in, nullptr, 0));
+      return;
+    case 2:
+      lua_pushnumber(L, std::strtod(in, nullptr));
+      return;
+  }
+  if (n == 5 && strncmp(in, "false", 5) == 0) {
+    lua_pushboolean(L, false);
+    return;
+  }
+  if (n == 4) {
+    if (strncmp(in, "true", 4) == 0) {
+      lua_pushboolean(L, true);
+      return;
+    }
+    if (strncmp(in, "null", 4) == 0) {
+      lua_pushnil(L);
+      return;
+    }
+  }
+  luaL_error(L, "Invalid primitive value");
+}
+
+jsmntok_v::const_iterator parse_value(lua_State* L, const char* json, jsmntok_v::const_iterator i, jsmntok_v::const_iterator r) {
+  auto& v = *i;
+  auto p = [&](const jsmntok_t& t) {
+    return t.end > v.end;
+  };
+  switch (v.type) {
+    case JSMN_OBJECT:
+      return obj2table(L, json, i + 1, std::find_if(i + 1, r, p));
+    case JSMN_ARRAY:
+      return arr2table(L, json, i + 1, std::find_if(i + 1, r, p));
+    case JSMN_STRING:
+      lua_pushstring(L, unescape_json_str(json + v.start, v.end - v.start).c_str());
+      break;
+    case JSMN_PRIMITIVE:
+      parse_primitive(L, json + v.start, v.end - v.start);
+      break;
+    default:
+      luaL_error(L, "Invalid object token: undefined value type");
+  }
+  return i + 1;
+}
+
+jsmntok_v::const_iterator obj2table(lua_State* L, const char* json, jsmntok_v::const_iterator l, jsmntok_v::const_iterator r) {
+  lua_newtable(L);
+  for (auto i = l; i != r;) {
+    auto& k = *i;
+    if (k.type != JSMN_STRING) {
+      luaL_error(L, "Invalid object token: key must be a string");
+    }
+    if (++i == r) {
+      luaL_error(L, "Invalid object token: key has no corresponding value");
+    }
+    lua_pushlstring(L, json + k.start, k.end - k.start);
+    i = parse_value(L, json, i, r);
+    lua_settable(L, -3);
+  }
+  return r;
+}
+
+jsmntok_v::const_iterator arr2table(lua_State* L, const char* json, jsmntok_v::const_iterator l, jsmntok_v::const_iterator r) {
+  lua_newtable(L);
+  size_t index = 0;
+  for (auto i = l; i != r;) {
+    lua_pushinteger(L, ++index);
+    i = parse_value(L, json, i, r);
+    lua_settable(L, -3);
+  }
+  return r;
+}
+
 int cjwt_decode(lua_State* L) {
   auto nargs = lua_gettop(L);
   luaL_checktype(L, 1, LUA_TSTRING);
@@ -308,6 +468,10 @@ int cjwt_decode(lua_State* L) {
           break;
         case L8W8JWT_CLAIM_TYPE_NULL:
           lua_pushnil(L);
+          break;
+        case L8W8JWT_CLAIM_TYPE_ARRAY:
+        case L8W8JWT_CLAIM_TYPE_OBJECT:
+          json2table(L, claims[i].value, claims[i].value_length);
           break;
         default:
           lua_pushfstring(L, "Unsupported claim type: %d", claims[i].type);
