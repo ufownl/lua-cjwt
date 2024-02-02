@@ -3,7 +3,7 @@
 
 namespace {
 
-constexpr const char* name = "cjwt.claim";
+constexpr const char* name = "cjwt.claim_value";
 
 int tostring(lua_State* L) {
   auto v = cjwt::claim_value::check(L, 1);

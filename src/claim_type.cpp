@@ -132,7 +132,7 @@ int object(lua_State* L) {
   lua_pushnil(L);
   while (lua_next(L, 1)) {
     if (lua_type(L, -2) != LUA_TSTRING) {
-      luaL_error(L, "Invalid object table: key must be a number");
+      luaL_error(L, "Invalid object table: key must be a string");
     }
     size_t n;
     auto k = lua_tolstring(L, -2, &n);
