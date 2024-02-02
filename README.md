@@ -64,7 +64,7 @@ for k, v in pairs(claims) do
 end
 ```
 
-### APIs for lua
+### APIs for Lua
 
 #### cjwt.algs
 
