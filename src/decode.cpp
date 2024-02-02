@@ -127,9 +127,11 @@ jsmntok_v::const_iterator parse_value(lua_State* L, const char* json, jsmntok_v:
       return obj2table(L, json, i + 1, std::find_if(i + 1, r, p));
     case JSMN_ARRAY:
       return arr2table(L, json, i + 1, std::find_if(i + 1, r, p));
-    case JSMN_STRING:
-      lua_pushstring(L, unescape_json_str(json + v.start, v.end - v.start).c_str());
+    case JSMN_STRING: {
+      auto value = unescape_json_str(json + v.start, v.end - v.start);
+      lua_pushlstring(L, value.data(), value.size());
       break;
+    }
     case JSMN_PRIMITIVE:
       parse_primitive(L, json + v.start, v.end - v.start);
       break;
@@ -149,7 +151,8 @@ jsmntok_v::const_iterator obj2table(lua_State* L, const char* json, jsmntok_v::c
     if (++i == r) {
       luaL_error(L, "Invalid object token: key has no corresponding value");
     }
-    lua_pushlstring(L, json + k.start, k.end - k.start);
+    auto key = unescape_json_str(json + k.start, k.end - k.start);
+    lua_pushlstring(L, key.data(), key.size());
     i = parse_value(L, json, i, r);
     lua_settable(L, -3);
   }
