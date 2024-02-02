@@ -1,4 +1,5 @@
 #include "encode.hpp"
+#include "claim_value.hpp"
 #include "algs.hpp"
 #include <l8w8jwt/encode.h>
 #include <vector>
@@ -7,7 +8,7 @@
 
 namespace {
 
-l8w8jwt_claim parse_additional_claim(lua_State* L, const char* key, size_t key_length) {
+l8w8jwt_claim encode_additional_claim(lua_State* L, const char* key, size_t key_length) {
   l8w8jwt_claim claim;
   claim.key = const_cast<char*>(key);
   claim.key_length = key_length;
@@ -38,6 +39,13 @@ l8w8jwt_claim parse_additional_claim(lua_State* L, const char* key, size_t key_l
       claim.value_length = 4;
       claim.type = L8W8JWT_CLAIM_TYPE_NULL;
       break;
+    case LUA_TUSERDATA: {
+      auto ud = cjwt::claim_value::check(L, -1);
+      claim.value = ud->data;
+      claim.value_length = ud->size;
+      claim.type = ud->type;
+      break;
+    }
     default:
       luaL_error(L, "Unsupported claim type");
   }
@@ -81,7 +89,7 @@ int encode(lua_State* L) {
         luaL_error(L, "Unsupported JWT algorithm: %s", value);
       }
     } else if (std::strcmp(key, "typ") != 0) {
-      header.emplace_back(parse_additional_claim(L, key, key_length));
+      header.emplace_back(encode_additional_claim(L, key, key_length));
     }
     lua_pop(L, 1);
   }
@@ -133,7 +141,7 @@ int encode(lua_State* L) {
         luaL_error(L, "Invalid JWT payload: iat must be a Unix timestamp");
       }
     } else {
-      payload.emplace_back(parse_additional_claim(L, key, key_length));
+      payload.emplace_back(encode_additional_claim(L, key, key_length));
     }
     lua_pop(L, 1);
   }
