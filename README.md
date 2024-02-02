@@ -120,6 +120,29 @@ Available validations:
 
 Return a `NULL` light userdata usually used to represent `nil` values in Lua tables etc and is similar to the [lua-cjson](https://kyne.com.au/~mark/software/lua-cjson.php) library's cjson.null constant.
 
+#### cjwt.array
+
+**syntax:** `<cjwt.claim_value>arr = cjwt.array(<table>value)`
+
+Create an array claim value from a Lua table, this Lua table must represent an array.
+
+```lua
+local arr = require("cjwt").array({"foo", "bar"})
+```
+
+#### cjwt.object
+
+**syntax:** `<cjwt.claim_value>obj = cjwt.object(<table>value)`
+
+Create an object claim value from a Lua table, this Lua table must represent an object.
+
+```lua
+local obj = require("cjwt").object({
+  foo = "hello",
+  bar = "world"
+})
+```
+
 ### Supported Claim Types
 
 - [x] String
@@ -127,5 +150,5 @@ Return a `NULL` light userdata usually used to represent `nil` values in Lua tab
 - [x] Number
 - [x] Boolean
 - [x] Null
-- [ ] Array
-- [ ] Object
+- [x] Array  *Note: array `aud` claim is not supported yet*
+- [x] Object
